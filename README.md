@@ -1,6 +1,9 @@
 # Berkshire consolidated assets
 
 A deterministic SEC-to-static-HTML dashboard for 100% of Berkshire Hathaway's consolidated assets.
+
+**Live dashboard:** https://expgolemclone.github.io/13f-analysis/
+
 Forked from [jl3032/13f-analysis](https://github.com/jl3032/13f-analysis), retaining its MIT attribution
 and adapting its dependency-free HTML design. Agent-generated investment commentary is not part of this application.
 
@@ -60,8 +63,17 @@ The accounting policy is bounded to 2023-Q1 onward, when OXY common stock was al
 The test fixture uses official 2026-Q2 balance-sheet amounts, but its XBRL context shapes and 13F positions are
 **synthetic**. It is never a production dataset. Passing offline tests does not establish successful live SEC extraction.
 
-A real SEC contact and a successful live build are required before publication. In particular, the exact current-filing
-concept/dimension selectors for the rail/energy intangible-assets disclosure require live verification.
+Live SEC extraction and first Pages deployment were verified on 2026-10-06 for 2025-Q4, 2026-Q1 and 2026-Q2.
+The latest completed quarter reports total assets of USD 1,263,071,000,000. The 2026-Q3 quarter is pending filings.
+All four balance-sheet/PP&E reconciliation deltas are zero for those three completed quarters.
+Production 13F values come from SEC filings, not the synthetic fixture. Source accessions, XBRL contexts and declared 13F units
+are included in the downloadable quarterly JSON.
+
+The hosted run passed 81 tests, actual pinned-SDK decoder checks and live source validation before deployment.
+A headless check of the published site verified all completed quarters, the 17-slice table, pending handling,
+mobile layout and no JavaScript errors. The contact identity is a GitHub Secret and is absent from generated output.
+
+A real SEC contact and a successful live build remain required for every publication.
 If a filing changes its taxonomy, inspect it and review the mapping; do not insert a guessed amount or broaden the selector.
 
 ## Run and test
