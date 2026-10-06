@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from tests.support import FIXTURE, NOW, ROOT, FixtureGateway, descriptor, load_config, render_fixture
 from assets import DataError
-from update import EdgarGateway, build_data, periods, select_financial, validate_13f_xml, validate_identity, write_site
+from update import EdgarGateway, build_data, periods, primary_13f, select_financial, validate_13f_xml, validate_identity, write_site
 
 
 class UpdateTests(unittest.TestCase):
@@ -146,32 +146,50 @@ class UpdateTests(unittest.TestCase):
                 gateway.financial(filings[0])
 
 
+class RawReport(SimpleNamespace):
+    @property
+    def value_unit_resolution(self):
+        raise AssertionError("Price-inferred units must not be used")
+
+    @property
+    def infotable(self):
+        raise AssertionError("Use raw values and declared SEC units")
+
+    @property
+    def total_value(self):
+        raise AssertionError("Use the raw cover total and declared SEC units")
+
+
 class GatewayHoldingsTests(unittest.TestCase):
     def report(self, multiplier=1):
         source = descriptor("13F-HR")
-        source["period"] = "2023-03-31" if multiplier == 1000 else "2026-06-30"
         record = {"Cusip": "037833100", "Class": "COM", "Type": "Shares", "PutCall": "",
-                  "Value": 10 * multiplier, "SharesPrnAmount": 1, "OtherManager": ""}
+                  "Value": 10, "SharesPrnAmount": 1, "OtherManager": ""}
         frame = SimpleNamespace(columns=list(record), empty=False, to_dict=lambda **kwargs: [copy.deepcopy(record)])
-        report = SimpleNamespace(infotable_xml=(ROOT / "tests/fixtures/13f.xml").read_text(), total_holdings=1,
-                                 value_unit_resolution=SimpleNamespace(multiplier=multiplier, ambiguous=False),
-                                 primary_form_information=SimpleNamespace(report_period=datetime.fromisoformat(source["period"])),
-                                 infotable=frame, amendment_type=None, amendment_number=None, total_value=10 * multiplier)
+        report = RawReport(infotable_xml=(ROOT / "tests/fixtures/13f.xml").read_text(),
+                           primary_form_information=SimpleNamespace(report_period=datetime.fromisoformat(source["period"]),
+                               summary_page=SimpleNamespace(total_holdings=1, total_value=10)),
+                           raw_infotable=frame, amendment_type=None, amendment_number=None)
+        primary = (ROOT / "tests/fixtures/13f-primary.xml").read_text()
+        if multiplier == 1000:
+            primary = primary.replace("X0202", "X0201")
         gateway = object.__new__(EdgarGateway)
-        gateway.filings = {source["accession"]: SimpleNamespace(accession_no=source["accession"])}
+        filing = SimpleNamespace(accession_no=source["accession"], cik=1067983, xml=lambda: primary)
+        gateway.filings = {source["accession"]: filing}
         def constructor(filing, *, use_latest_period_of_report):
             self.assertFalse(use_latest_period_of_report)
             return report
         sdk = SimpleNamespace(ThirteenF=constructor)
         return gateway, source, report, record, sdk
 
-    def test_sdk_dollars_are_not_multiplied_twice(self):
+    def test_declared_units_are_applied_once_without_sdk_price_inference(self):
         for multiplier in (1, 1000):
             gateway, source, report, row, sdk = self.report(multiplier)
             with self.subTest(multiplier=multiplier), patch.dict(sys.modules, {"edgar": sdk}):
                 result = gateway.holdings(source)
-                self.assertEqual(result["holdings"], [row])
+                self.assertEqual(result["holdings"], [{**row, "Value": 10 * multiplier}])
                 self.assertEqual(result["total_value"], 10 * multiplier)
+                self.assertEqual(result["source"]["value_units"]["multiplier"], multiplier)
 
     def test_sdk_normalization_mismatch_stops(self):
         gateway, source, report, row, sdk = self.report()
@@ -181,13 +199,13 @@ class GatewayHoldingsTests(unittest.TestCase):
 
     def test_sdk_must_preserve_every_xml_row(self):
         gateway, source, report, row, sdk = self.report()
-        report.infotable.to_dict = lambda **kwargs: [row, row]
+        report.raw_infotable.to_dict = lambda **kwargs: [row, row]
         with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "omitted or added"):
             gateway.holdings(source)
 
     def test_cover_row_count_must_match_xml(self):
         gateway, source, report, row, sdk = self.report()
-        report.total_holdings = 2
+        report.primary_form_information.summary_page.total_holdings = 2
         with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "entry count"):
             gateway.holdings(source)
 
@@ -197,23 +215,62 @@ class GatewayHoldingsTests(unittest.TestCase):
         with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "cover-page period"):
             gateway.holdings(source)
 
-    def test_ambiguous_units_stop(self):
+    def test_sdk_cover_value_must_match_primary_xml(self):
         gateway, source, report, row, sdk = self.report()
-        report.value_unit_resolution.ambiguous = True
-        with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "Ambiguous"):
+        report.primary_form_information.summary_page.total_value = 0
+        with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "cover value"):
             gateway.holdings(source)
 
-    def test_unknown_unit_multiplier_stops(self):
+    def test_sdk_amendment_must_match_primary_xml(self):
         gateway, source, report, row, sdk = self.report()
-        report.value_unit_resolution.multiplier = 10
-        with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "Unsupported"):
+        report.amendment_type = "RESTATEMENT"
+        with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "amendment metadata"):
             gateway.holdings(source)
 
     def test_missing_instrument_columns_stop(self):
         gateway, source, report, row, sdk = self.report()
-        report.infotable.columns.remove("OtherManager")
+        report.raw_infotable.columns.remove("OtherManager")
         with patch.dict(sys.modules, {"edgar": sdk}), self.assertRaisesRegex(DataError, "columns"):
             gateway.holdings(source)
+
+
+class PrimaryXmlTests(unittest.TestCase):
+    def setUp(self):
+        self.xml = (ROOT / "tests/fixtures/13f-primary.xml").read_text()
+        self.source = descriptor("13F-HR")
+
+    def test_explicit_known_schema_units(self):
+        self.assertEqual(primary_13f(self.xml, self.source, 1067983)["unit_multiplier"], 1)
+        self.assertEqual(primary_13f(self.xml.replace("X0202", "X0201"), self.source, 1067983)["unit_multiplier"], 1000)
+
+    def test_missing_unknown_or_duplicate_schema_never_uses_a_date_or_price(self):
+        for xml in (self.xml.replace("X0202", "X9999"), self.xml.replace("<schemaVersion>X0202</schemaVersion>", ""),
+                    self.xml.replace("<schemaVersion>X0202</schemaVersion>", "<schemaVersion>X0202</schemaVersion>" * 2)):
+            with self.subTest(xml=xml[:50]), self.assertRaises(DataError):
+                primary_13f(xml, self.source, 1067983)
+
+    def test_period_entity_form_and_amendment_flag_must_match(self):
+        for old, new in (("06-30-2026", "03-31-2026"), ("0001067983", "0000000001"),
+                         ("13F-HR", "13F-HR/A"), ("<isAmendment>false", "<isAmendment>true")):
+            with self.subTest(new=new), self.assertRaises(DataError):
+                primary_13f(self.xml.replace(old, new), self.source, 1067983)
+
+    def test_invalid_or_missing_cover_totals_are_not_zero(self):
+        for xml in (self.xml.replace("<tableValueTotal>10</tableValueTotal>", ""),
+                    self.xml.replace("<tableValueTotal>10", "<tableValueTotal>bad"),
+                    self.xml.replace("<tableEntryTotal>1", "<tableEntryTotal>-1")):
+            with self.assertRaises(DataError):
+                primary_13f(xml, self.source, 1067983)
+
+    def test_amendment_fields_are_required_and_preserved(self):
+        amended = self.xml.replace("13F-HR", "13F-HR/A").replace("<isAmendment>false</isAmendment>",
+            "<isAmendment>true</isAmendment><amendmentNo>1</amendmentNo><amendmentInfo><amendmentType>NEW HOLDINGS</amendmentType></amendmentInfo>")
+        source = {**self.source, "form": "13F-HR/A"}
+        parsed = primary_13f(amended, source, 1067983)
+        self.assertEqual(parsed["amendment_type"], "NEW HOLDINGS")
+        self.assertEqual(parsed["amendment_number"], 1)
+        with self.assertRaises(DataError):
+            primary_13f(amended.replace("<amendmentNo>1</amendmentNo>", ""), source, 1067983)
 
 
 class XmlTests(unittest.TestCase):

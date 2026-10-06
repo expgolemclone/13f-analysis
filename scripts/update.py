@@ -77,14 +77,66 @@ def source(filing, period: str) -> dict:
     }
 
 
-def validate_13f_xml(xml: str) -> list[tuple[int, int]]:
-    """Reject malformed XML and missing numbers before SDK parser recovery/defaults."""
-    if not xml or "<!DOCTYPE" in xml.upper() or "<!ENTITY" in xml.upper():
+def strict_xml(xml: str):
+    if not isinstance(xml, str) or not xml or "<!DOCTYPE" in xml.upper() or "<!ENTITY" in xml.upper():
         raise DataError("13F requires XML without DTDs or entities")
     try:
-        root = ET.fromstring(xml)
+        return ET.fromstring(xml)
     except ET.ParseError as error:
         raise DataError("Invalid 13F XML") from error
+
+
+def primary_13f(xml: str, descriptor: dict, cik: int) -> dict:
+    """Declared SEC schema units, never inferred prices or library overrides."""
+    root = strict_xml(xml)
+    if root.tag != "{http://www.sec.gov/edgar/thirteenffiler}edgarSubmission":
+        raise DataError("Expected SEC 13F primary XML")
+    def text(path, required=True):
+        nodes = root.findall(path)
+        if not nodes and not required:
+            return None
+        if len(nodes) != 1 or not nodes[0].text or not nodes[0].text.strip():
+            raise DataError(f"Missing or ambiguous 13F primary field: {path}")
+        return nodes[0].text.strip()
+    schema = text("{*}schemaVersion")
+    units = {"X0201": 1000, "X0202": 1}
+    if schema not in units:
+        raise DataError(f"Unsupported or missing 13F unit schema: {schema}")
+    if text("{*}headerData/{*}submissionType") != descriptor["form"]:
+        raise DataError("13F primary form differs from submissions metadata")
+    identifier = text("{*}headerData/{*}filerInfo/{*}filer/{*}credentials/{*}cik")
+    if not identifier.isdigit() or int(identifier) != cik:
+        raise DataError("13F primary filer CIK differs from requested company")
+    for path in ("{*}headerData/{*}filerInfo/{*}periodOfReport", "{*}formData/{*}coverPage/{*}reportCalendarOrQuarter"):
+        try:
+            period = datetime.strptime(text(path), "%m-%d-%Y").date().isoformat()
+        except ValueError as error:
+            raise DataError("Invalid 13F cover-page reporting period") from error
+        if period != descriptor["period"]:
+            raise DataError("13F cover-page period differs from SEC submissions metadata")
+    flag = text("{*}formData/{*}coverPage/{*}isAmendment")
+    if flag not in {"true", "false"} or (flag == "true") != descriptor["form"].endswith("/A"):
+        raise DataError("13F amendment flag differs from its form")
+    number = text("{*}formData/{*}coverPage/{*}amendmentNo", required=False)
+    kind = text("{*}formData/{*}coverPage/{*}amendmentInfo/{*}amendmentType", required=False)
+    if flag == "true":
+        if not number or not number.isdigit() or int(number) <= 0 or kind not in {"RESTATEMENT", "NEW HOLDINGS"}:
+            raise DataError("Invalid 13F amendment metadata")
+    elif number is not None or kind is not None:
+        raise DataError("Original 13F has amendment metadata")
+    totals = {}
+    for key, field in (("count", "tableEntryTotal"), ("raw_total", "tableValueTotal")):
+        value = text("{*}formData/{*}summaryPage/{*}" + field)
+        if not re.fullmatch(r"[0-9]+", value):
+            raise DataError(f"Invalid 13F summary number: {field}")
+        totals[key] = int(value)
+    return {**totals, "schema_version": schema, "unit_multiplier": units[schema],
+            "amendment_type": kind, "amendment_number": int(number) if number else None}
+
+
+def validate_13f_xml(xml: str) -> list[tuple[int, int]]:
+    """Reject malformed XML and missing numbers before SDK parser recovery/defaults."""
+    root = strict_xml(xml)
     rows = []
     for entry in root.findall(".//{*}infoTable"):
         for path in ("{*}cusip", "{*}titleOfClass", "{*}shrsOrPrnAmt/{*}sshPrnamtType"):
@@ -141,20 +193,20 @@ class EdgarGateway:
     def holdings(self, descriptor: dict) -> dict:
         from edgar import ThirteenF
         filing = self.filings[descriptor["accession"]]
+        primary = primary_13f(filing.xml(), descriptor, filing.cik)
         report = ThirteenF(filing, use_latest_period_of_report=False)
         raw_numbers = validate_13f_xml(report.infotable_xml)
-        if report.total_holdings != len(raw_numbers):
+        info = report.primary_form_information
+        if primary["count"] != len(raw_numbers) or info.summary_page.total_holdings != primary["count"]:
             raise DataError("13F row count differs from cover-page entry count")
-        resolution = report.value_unit_resolution
-        if resolution.multiplier not in {1, 1000}:
-            raise DataError("Unsupported SDK 13F unit multiplier")
-        if resolution.ambiguous:
-            raise DataError(f"Ambiguous 13F units: {filing.accession_no}")
-        # report_period is SDK display text; the cover page supplies an authoritative datetime.
-        actual_period = report.primary_form_information.report_period.date().isoformat()
-        if actual_period != descriptor["period"]:
+        if money(info.summary_page.total_value) != primary["raw_total"]:
+            raise DataError("SDK 13F cover value differs from primary XML")
+        if info.report_period.date().isoformat() != descriptor["period"]:
             raise DataError("13F cover-page period differs from SEC submissions metadata")
-        table = report.infotable
+        if (report.amendment_type != primary["amendment_type"]
+                or report.amendment_number != primary["amendment_number"]):
+            raise DataError("SDK 13F amendment metadata differs from primary XML")
+        table = report.raw_infotable
         if table is None or table.empty:
             raise DataError(f"Empty 13F table: {filing.accession_no}")
         fields = ("Cusip", "Class", "Type", "PutCall", "Value", "SharesPrnAmount", "OtherManager")
@@ -169,15 +221,17 @@ class EdgarGateway:
             normalized = {key: row[key] for key in fields}
             normalized["Value"] = money(normalized["Value"])
             normalized["SharesPrnAmount"] = money(normalized["SharesPrnAmount"])
-            if (normalized["Value"] != raw_value * resolution.multiplier
-                    or normalized["SharesPrnAmount"] != raw_shares):
+            if normalized["Value"] != raw_value or normalized["SharesPrnAmount"] != raw_shares:
                 raise DataError("SDK monetary/share normalization differs from the source XML")
+            normalized["Value"] *= primary["unit_multiplier"]
             rows.append(normalized)
+        unit_source = {"schema_version": primary["schema_version"], "multiplier": primary["unit_multiplier"],
+                       "basis": "SEC 13F XML schema", "instructions": "https://www.sec.gov/files/form13f.pdf"}
         return {
-            **descriptor, "holdings": rows, "source": descriptor,
-            "amendment_type": report.amendment_type, "amendment_number": report.amendment_number,
-            "unit_ambiguous": resolution.ambiguous, "unit_multiplier": resolution.multiplier,
-            "total_value": money(report.total_value),
+            **descriptor, "holdings": rows, "source": {**descriptor, "value_units": unit_source},
+            "amendment_type": primary["amendment_type"], "amendment_number": primary["amendment_number"],
+            "unit_ambiguous": False, "unit_multiplier": primary["unit_multiplier"],
+            "total_value": primary["raw_total"] * primary["unit_multiplier"],
         }
 
 

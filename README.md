@@ -40,7 +40,11 @@ The independent checks reconcile:
 6. Every chart slice and Other component to the final total.
 
 Rounding tolerance follows the XBRL decimals metadata. Amounts stay in whole USD; percentages are computed only for display.
-13F units must be unambiguous. Strict XML validation prevents parser recovery or missing-number defaults from becoming asset amounts.
+13F units come only from a known, explicit SEC primary-XML schema: X0201 reports thousands of dollars; X0202 reports dollars.
+Unknown or missing schema versions stop ingestion. EdgarTools raw tables are normalized once using these declared units,
+not its implied-price heuristic or a value-unit override. Primary XML periods, filer CIK, forms, amendment fields and cover totals
+are validated independently and compared with SDK decoding. Each holdings source records its schema and unit provenance.
+Strict XML validation prevents parser recovery or missing-number defaults from becoming asset amounts.
 Options and principal-amount securities are not ordinary-stock slices. Multiple manager rows are aggregated by CUSIP.
 A restatement replaces the prior 13F report; a new-holdings amendment appends. Ambiguous or replayed amendments stop ingestion.
 
