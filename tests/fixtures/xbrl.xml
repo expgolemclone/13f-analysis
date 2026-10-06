@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrli:xbrl xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" xmlns:us-gaap="http://fasb.org/us-gaap/2026" xmlns:srt="http://fasb.org/srt/2026" xmlns:brka="http://www.berkshirehathaway.com/20260630">
+  <xbrli:context id="consolidated"><xbrli:entity><xbrli:identifier scheme="http://www.sec.gov/CIK">0001067983</xbrli:identifier></xbrli:entity><xbrli:period><xbrli:instant>2026-06-30</xbrli:instant></xbrli:period></xbrli:context>
+  <xbrli:context id="insurance"><xbrli:entity><xbrli:identifier scheme="http://www.sec.gov/CIK">0001067983</xbrli:identifier><xbrli:segment><xbrldi:explicitMember dimension="srt:ProductOrServiceAxis">brka:InsuranceAndOtherMember</xbrldi:explicitMember></xbrli:segment></xbrli:entity><xbrli:period><xbrli:instant>2026-06-30</xbrli:instant></xbrli:period></xbrli:context>
+  <xbrli:unit id="USD"><xbrli:measure>iso4217:USD</xbrli:measure></xbrli:unit>
+  <us-gaap:Assets contextRef="consolidated" unitRef="USD" decimals="-6">1263071000000</us-gaap:Assets>
+  <us-gaap:CashAndCashEquivalentsAtCarryingValue contextRef="insurance" unitRef="USD" decimals="-6">35096000000</us-gaap:CashAndCashEquivalentsAtCarryingValue>
+</xbrli:xbrl>

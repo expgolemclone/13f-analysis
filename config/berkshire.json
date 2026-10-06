@@ -1,0 +1,49 @@
+{
+  "cik": 1067983,
+  "since": "2025-12-31",
+  "scope_axis": "srt:ProductOrServiceAxis",
+  "scopes": {
+    "insurance": "brka:InsuranceAndOtherMember",
+    "rail_energy": "brka:RailroadUtilitiesAndEnergyMember",
+    "railroad": "brka:RailroadMember",
+    "energy": "brka:UtilitiesAndEnergyMember"
+  },
+  "facts": {
+    "total": ["Assets", null],
+    "insurance_total": ["Assets", "insurance"],
+    "rail_energy_total": ["Assets", "rail_energy"],
+    "cash_insurance": ["CashAndCashEquivalentsAtCarryingValue", "insurance"],
+    "cash_rail_energy": ["CashAndCashEquivalentsAtCarryingValue", "rail_energy"],
+    "treasury_bills": ["USTreasuryBills", "insurance"],
+    "fixed_income": ["AvailableForSaleSecuritiesDebtSecurities", "insurance"],
+    "equities": ["EquitySecuritiesFvNi", "insurance"],
+    "equity_method": ["EquityMethodInvestments", "insurance"],
+    "loans": ["NotesReceivableNet", "insurance"],
+    "receivables_insurance": ["PremiumsAndOtherReceivablesNet", "insurance"],
+    "receivables_rail_energy": ["AccountsAndOtherReceivablesNet", "rail_energy"],
+    "inventories": ["InventoryNet", "insurance"],
+    "ppe_insurance": ["PropertyPlantAndEquipmentNet", "insurance"],
+    "ppe_rail_energy": ["PropertyPlantAndEquipmentNet", "rail_energy"],
+    "bnsf": ["PropertyPlantAndEquipmentNet", "railroad"],
+    "bhe": ["PropertyPlantAndEquipmentNet", "energy"],
+    "lease_equipment": ["PropertySubjectToOrAvailableForOperatingLeaseNet", "insurance"],
+    "goodwill_insurance": ["Goodwill", "insurance"],
+    "goodwill_rail_energy": ["Goodwill", "rail_energy"],
+    "intangibles_insurance": ["IntangibleAssetsNetExcludingGoodwill", "insurance"],
+    "intangibles_rail_energy_gross": ["IntangibleAssetsGrossExcludingGoodwill", "rail_energy"],
+    "intangibles_rail_energy_amortization": ["FiniteLivedIntangibleAssetsAccumulatedAmortization", "rail_energy"],
+    "deferred_reinsurance": ["UnamortizedDeferredChargesOnReinsuranceAssumed", "insurance"],
+    "regulatory_assets": ["RegulatoryAssets", "rail_energy"],
+    "other_insurance": ["OtherAssets", "insurance"],
+    "other_rail_energy": ["OtherAssets", "rail_energy"],
+    "oxy_carrying": ["EquityMethodInvestments", {"srt:ScheduleOfEquityMethodInvestmentEquityMethodInvesteeNameAxis": "brka:OccidentalPetroleumCorporationMember"}]
+  },
+  "equities": [
+    {"ticker": "AAPL", "cusip": "037833100", "member": "brka:AppleIncMember"},
+    {"ticker": "AXP", "cusip": "025816109", "member": "brka:AmericanExpressCompanyMember"},
+    {"ticker": "GOOGL", "cusip": "02079K305", "member": "brka:AlphabetIncMember"},
+    {"ticker": "KO", "cusip": "191216100", "member": "brka:CocaColaCompanyMember"},
+    {"ticker": "BAC", "cusip": "060505104", "member": "brka:BankOfAmericaCorporationMember"},
+    {"ticker": "CVX", "cusip": "166764100", "member": "brka:ChevronCorporationMember"}
+  ]
+}

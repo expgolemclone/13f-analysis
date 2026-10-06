@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Berkshire Hathaway consolidated assets, reconciled to SEC quarterly financial statements.">
+<title>Berkshire | Total Assets</title>
+<style>
+:root{color-scheme:dark;--bg:#0f172a;--surface:#1e293b;--border:#475569;--text:#e2e8f0;--muted:#b4c2d6;--blue:#93c5fd;--amber:#fcd34d;--green:#86efac;--radius:12px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:32px 24px}h1,h2,h3,p{margin:0 0 12px}h1{font-size:clamp(26px,4vw,40px);letter-spacing:-1px}h2{font-size:20px}a{color:var(--blue)}.muted{color:var(--muted)}.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--blue)}header{display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:24px}label{display:block;font-size:13px;color:var(--muted)}select,button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;min-height:44px;padding:8px 12px}button{cursor:pointer}button:hover,button[aria-pressed=true]{border-color:var(--blue);background:#273c58}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:3px}.status{padding:12px 16px;background:var(--surface);border-left:3px solid var(--blue);border-radius:4px;margin-bottom:24px}.status.warning{border-color:var(--amber)}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}.card,.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}.card-label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}.card-value{font-size:clamp(22px,3vw,32px);font-weight:700;font-variant-numeric:tabular-nums}.allocation{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.5fr);gap:24px;align-items:start}.chart{width:min(100%,300px);aspect-ratio:1;border-radius:50%;position:relative;margin:24px auto}.hole{position:absolute;inset:24%;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center}.hole strong{font-size:30px}.hole span{font-size:12px;color:var(--muted)}.detail{min-height:190px;border-top:1px solid var(--border);padding-top:20px}.detail p{font-size:14px}.measure{color:var(--amber);font-size:12px;text-transform:uppercase;letter-spacing:1px}.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}caption{text-align:left;font-size:20px;font-weight:700;margin-bottom:16px}th,td{padding:8px 4px;border-bottom:1px solid var(--border);text-align:left}th{color:var(--muted);font-weight:500}.numeric{text-align:right;white-space:nowrap}td button{border-color:transparent;background:transparent;text-align:left;width:100%;padding:8px 6px;display:flex;align-items:center;gap:10px}.dot{width:10px;height:10px;flex:none;border-radius:50%;background:var(--slice-color)}tfoot td{font-weight:700;border:0;padding-top:16px}.below{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}.below ul{padding-left:20px}.component-list{display:grid;grid-template-columns:1fr auto;gap:8px 16px;font-size:14px}.component-list dt,.component-list dd{margin:0}.component-list dd{text-align:right;font-variant-numeric:tabular-nums}.sources li{margin-bottom:12px;overflow-wrap:anywhere}footer{margin-top:32px;border-top:1px solid var(--border);padding-top:20px;font-size:13px;color:var(--muted)}[hidden]{display:none!important}
+@media(max-width:760px){main{padding:24px 16px}header{align-items:start;flex-direction:column}.cards{grid-template-columns:1fr}.allocation,.below{grid-template-columns:1fr}.panel{padding:20px}.chart{width:260px}.detail{min-height:0}}
+</style>
+</head>
+<body>
+<main>
+<header><div><p class="eyebrow">SEC filings / Consolidated balance sheet</p><h1>Berkshire, in full.</h1><p class="muted">A quarterly view of 100% of reported assets, not just the 13F portfolio.</p></div><div><label for="quarter">Reporting quarter</label><select id="quarter" disabled><option>Loading</option></select></div></header>
+<p id="status" class="status" role="status" aria-live="polite">Loading verified quarterly data.</p>
+<section id="dashboard" hidden aria-label="Asset allocation">
+<div class="cards"><div class="card"><div class="card-label">Consolidated total assets</div><div class="card-value" id="total"></div><div class="muted" id="period"></div></div><div class="card"><div class="card-label">Change vs previous quarter</div><div class="card-value" id="change"></div><div class="muted">Same accounting policy, reported USD.</div></div><div class="card"><div class="card-label">Allocation check</div><div class="card-value">100%</div><div class="muted">Every slice reconciles to the balance sheet.</div></div></div>
+<div class="allocation">
+<section class="panel" aria-labelledby="chart-heading"><h2 id="chart-heading">Total asset allocation</h2><p class="muted">Select an item in the table for its accounting basis.</p><div id="chart" class="chart" role="img" aria-describedby="allocation-table"><div class="hole"><strong>100%</strong><span>consolidated assets</span></div></div><div class="detail" id="detail" aria-live="polite"></div></section>
+<div class="panel table-scroll"><table id="allocation-table"><caption>Assets, not enterprise value</caption><thead><tr><th scope="col">Allocation</th><th scope="col" class="numeric">USD billions</th><th scope="col" class="numeric">% of total</th></tr></thead><tbody id="rows"></tbody><tfoot><tr><td>Total assets</td><td id="table-total" class="numeric"></td><td class="numeric">100.00%</td></tr></tfoot></table></div>
+</div>
+<div class="below">
+<section class="panel"><h2>What sits inside Other?</h2><dl id="other" class="component-list"></dl></section>
+<section class="panel"><h2>Primary sources</h2><ul id="sources" class="sources"></ul><p class="muted" id="generated"></p><p><a id="download">Download this quarter's JSON</a></p></section>
+</div>
+<section class="panel" style="margin-top:24px"><h2>Read this chart correctly</h2><ul><li>BNSF and BHE are <strong>net PP&E only</strong>, not full business asset totals or valuations.</li><li>OXY is the <strong>equity-method carrying value of common stock</strong>. Its preferred stock and warrants remain in Other equities.</li><li>Cash includes cash equivalents. The T-Bills slice excludes bills already inside cash equivalents. Restricted cash remains in Other.</li><li>GOOGL means Alphabet Class A only. Other equities includes non-13F assets, other stocks and any undisclosed confidential positions.</li><li>The balance sheet mixes GAAP carrying values and fair values. This is not an economic valuation or investment recommendation.</li><li>13F reports are normally filed within 45 days of quarter end. Options and principal-amount instruments are not ordinary stock slices.</li></ul></section>
+</section>
+<footer>Source: SEC EDGAR, Berkshire Hathaway Inc., CIK 0001067983. For information only, not investment advice.<br>Open source: <a href="https://github.com/expgolemclone/stock">expgolemclone/stock</a>. MIT, derived from <a href="https://github.com/jl3032/13f-analysis">jl3032/13f-analysis</a>.</footer>
+</main>
+<script>
+'use strict';
+const colors=['#38bdf8','#94a3b8','#a78bfa','#fbbf24','#fb7185','#4ade80','#f472b6','#22d3ee','#c084fc','#60a5fa','#a3e635','#f97316','#facc15','#2dd4bf','#818cf8','#e879f9','#cbd5e1'];
+const $=id=>document.getElementById(id);
+const usd=new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3});
+const pct=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const dataCache=new Map();
+let index, selection=0;
+function element(tag,text,className){const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;return node;}
+function status(text,warning=false){$('status').textContent=text;$('status').classList.toggle('warning',warning);}
+function assert(condition,message){if(!condition)throw new Error(message);}
+async function json(path){const response=await fetch(path,{cache:'no-store'});assert(response.ok,`Data request failed: ${response.status}`);return response.json();}
+function validateIndex(value){
+ assert(value.schema_version===1&&value.cik===1067983,'Unsupported index schema');
+ assert(Array.isArray(value.quarters)&&value.quarters.length>0,'No reporting quarters');
+ assert(Number.isFinite(Date.parse(value.generated_at)),'Invalid verification date');
+ const keys=new Set();let previous='';
+ for(const entry of value.quarters){
+  assert(/^\d{4}-Q[1-4]$/.test(entry.quarter)&&!keys.has(entry.quarter)&&entry.quarter>previous,'Invalid quarter inventory');
+  const suffix=['03-31','06-30','09-30','12-31'][Number(entry.quarter.at(-1))-1];
+  assert(entry.period===`${entry.quarter.slice(0,4)}-${suffix}`,'Quarter and period differ');
+  assert(['complete','pending'].includes(entry.status),'Invalid quarter status');
+  if(entry.status==='complete')assert(entry.path===`data/quarters/${entry.quarter}.json`,'Invalid snapshot path');
+  else assert(Array.isArray(entry.missing)&&entry.missing.length>0,'Missing pending reason');
+  keys.add(entry.quarter);previous=entry.quarter;
+ }
+ const complete=value.quarters.filter(entry=>entry.status==='complete');
+ assert(complete.length>0&&complete.at(-1).quarter===value.latest_complete,'Invalid latest-complete pointer');
+}
+function validateSnapshot(value,entry){
+ assert(value.schema_version===1&&value.quarter===entry.quarter&&value.period===entry.period,'Snapshot period mismatch');
+ assert(Number.isSafeInteger(value.total_assets)&&value.total_assets>0,'Invalid total assets');
+ assert(Array.isArray(value.slices)&&value.slices.length===17,'Invalid asset slices');
+ const expected=['cash','treasury_bills','AAPL','AXP','GOOGL','KO','BAC','CVX','OXY','other_equities','bnsf','bhe','fixed_income','equity_method','receivables','intangibles','other'];
+ value.slices.forEach((slice,i)=>{assert(slice.key===expected[i],'Invalid slice inventory');assert(Number.isSafeInteger(slice.amount)&&slice.amount>=0,'Invalid slice amount');assert(['label','measurement','note'].every(key=>typeof slice[key]==='string'),'Invalid slice description');});
+ assert(value.slices.reduce((total,slice)=>total+slice.amount,0)===value.total_assets,'Allocation does not sum to total assets');
+ assert(Array.isArray(value.other_breakdown)&&value.other_breakdown.every(item=>typeof item.label==='string'&&Number.isSafeInteger(item.amount)),'Invalid Other components');
+ assert(value.other_breakdown.reduce((total,item)=>total+item.amount,0)===value.slices.at(-1).amount,'Other components do not reconcile');
+ const sources=[value.financial_source,...value.holdings_sources];
+ for(const source of sources){assert(source.period===value.period,'Source period mismatch');assert(/^https:\/\/www\.sec\.gov\/Archives\/edgar\/data\/1067983\/[0-9]+\//.test(source.url),'Invalid source URL');}
+}
+async function snapshot(entry){
+ if(dataCache.has(entry.quarter))return dataCache.get(entry.quarter);
+ const data=await json(entry.path);validateSnapshot(data,entry);dataCache.set(entry.quarter,data);return data;
+}
+function detail(data,key){
+ const slice=data.slices.find(item=>item.key===key);$('detail').replaceChildren(element('h3',slice.label),element('p',slice.measurement,'measure'),element('p',slice.note));
+ for(const button of $('rows').querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.key===key));
+}
+function draw(data,previous){
+ $('total').textContent=`$${usd.format(data.total_assets/1e9)}B`;$('period').textContent=`As of ${data.period}`;
+ $('change').textContent=previous?`${data.total_assets>=previous.total_assets?'+':''}${pct.format((data.total_assets/previous.total_assets-1)*100)}%`:'Not available';
+ $('table-total').textContent=usd.format(data.total_assets/1e9);
+ $('rows').replaceChildren();let angle=0;const gradient=[];
+ data.slices.forEach((slice,i)=>{
+  const end=angle+slice.amount/data.total_assets*360;gradient.push(`${colors[i]} ${angle}deg ${end}deg`);angle=end;
+  const row=document.createElement('tr');const cell=document.createElement('td');const button=document.createElement('button');
+  button.type='button';button.dataset.key=slice.key;button.setAttribute('aria-pressed','false');button.style.setProperty('--slice-color',colors[i]);
+  const dot=element('span','','dot');dot.setAttribute('aria-hidden','true');button.append(dot,element('span',slice.label));button.addEventListener('click',()=>detail(data,slice.key));
+  cell.append(button);row.append(cell,element('td',usd.format(slice.amount/1e9),'numeric'),element('td',`${pct.format(slice.amount/data.total_assets*100)}%`,'numeric'));$('rows').append(row);
+ });
+ $('chart').style.background=`conic-gradient(${gradient.join(',')})`;
+ $('chart').setAttribute('aria-label',`Berkshire consolidated assets at ${data.period}: ${data.slices.map(slice=>`${slice.label} ${pct.format(slice.amount/data.total_assets*100)}%`).join(', ')}. Exact amounts are in the table.`);
+ $('other').replaceChildren();for(const item of data.other_breakdown)$('other').append(element('dt',item.label),element('dd',`$${usd.format(item.amount/1e9)}B`));
+ $('sources').replaceChildren();for(const source of [data.financial_source,...data.holdings_sources]){const item=document.createElement('li');const link=element('a',`${source.form}: ${source.accession}`);link.href=source.url;link.target='_blank';link.rel='noopener noreferrer';item.append(link,element('div',`Filed ${source.filed}; reporting date ${source.period}`,'muted'));$('sources').append(item);}
+ $('download').href=`data/quarters/${data.quarter}.json`;$('download').download=`berkshire-${data.quarter}.json`;
+ $('generated').textContent=`Last successful verification: ${new Date(index.generated_at).toISOString()}`;
+ detail(data,'cash');$('dashboard').hidden=false;
+}
+async function selectQuarter(){
+ const token=++selection;const entry=index.quarters.find(item=>item.quarter===$('quarter').value);
+ $('dashboard').hidden=true;
+ if(entry.status==='pending'){status(`${entry.quarter} is pending ${entry.missing.join(' and ')}. No previous-quarter holdings are substituted.`,true);return;}
+ status(`Loading ${entry.quarter}.`);
+ try{
+  const current=await snapshot(entry);const position=index.quarters.indexOf(entry);const prev=index.quarters[position-1];
+  const previous=prev&&prev.status==='complete'?await snapshot(prev):null;
+  if(token!==selection)return;
+  draw(current,previous);
+  const stale=Date.now()-Date.parse(index.generated_at)>14*86400000;
+  const pending=index.quarters.filter(item=>item.status==='pending'&&item.quarter>entry.quarter).map(item=>item.quarter);
+  let text=`${entry.quarter}: verified allocation. Amounts are USD, using the disclosed accounting basis.`;
+  if(pending.length)text+=` Awaiting filings for ${pending.join(', ')}.`;
+  if(stale)text+=' Verification is more than 14 days old. Check the update workflow.';
+  if(index.test_fixture)text='TEST FIXTURE - SYNTHETIC 13F HOLDINGS. NOT LIVE FINANCIAL DATA. '+text;
+  status(text,stale||Boolean(index.test_fixture));
+ }catch(error){if(token===selection){$('dashboard').hidden=true;status(`Cannot display verified data: ${error.message}`,true);}}
+}
+(async()=>{
+ try{index=await json('data/quarters.json');validateIndex(index);$('quarter').replaceChildren();for(const entry of [...index.quarters].reverse()){const option=element('option',`${entry.quarter}${entry.status==='pending'?' - pending':''}`);option.value=entry.quarter;$('quarter').append(option);}$('quarter').value=index.latest_complete;$('quarter').disabled=false;$('quarter').addEventListener('change',selectQuarter);await selectQuarter();}
+ catch(error){status(`Cannot load the quarter inventory: ${error.message}`,true);}
+})();
+</script>
+</body>
+</html>

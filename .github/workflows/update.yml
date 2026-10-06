@@ -1,0 +1,77 @@
+name: Verify and update Berkshire assets
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+    - cron: '17 6 10-25 2,5,8,11 *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: berkshire-assets-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Install declared dependencies into the runner's shared interpreter
+        run: python -m pip install -r requirements.txt
+      - name: Check dependency contracts
+        run: python -m pip check
+      - name: Install headless Chromium
+        run: python -m playwright install --with-deps chromium
+      - name: Verify accounting, updates and browser behavior
+        run: python -B tests/run.py
+      - name: Verify pinned EdgarTools decoders offline
+        run: python -B tests/check_sdk.py
+
+  publish:
+    if: github.event.repository.private == false && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+      - name: Require a real SEC contact before any live request
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          python -c "import os, sys; sys.path.insert(0, 'scripts'); from update import validate_identity; validate_identity(os.environ['SEC_USER_AGENT'])"
+      - name: Install declared dependencies into the runner's shared interpreter
+        run: python -m pip install -r requirements.txt
+      - name: Build only verified SEC data
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+          EDGAR_RATE_LIMIT_PER_SEC: '3'
+        run: python -B scripts/update.py build --output '${{ runner.temp }}/site'
+      - name: Reject incomplete builds and test fixtures
+        run: |
+          python -c "import json, pathlib; root=pathlib.Path('${{ runner.temp }}/site'); marker=json.loads((root/'build.json').read_text()); index=json.loads((root/'data/quarters.json').read_text()); assert not index.get('test_fixture'); assert marker['quarters']==sorted(p.stem for p in (root/'data/quarters').glob('*.json')); assert index['latest_complete'] in marker['quarters']"
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        id: deployment
