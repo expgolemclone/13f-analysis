@@ -8,7 +8,8 @@
 <style>
 :root{color-scheme:dark;--bg:#0f172a;--surface:#1e293b;--border:#475569;--text:#e2e8f0;--muted:#b4c2d6;--blue:#93c5fd;--amber:#fcd34d;--green:#86efac;--radius:12px}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:32px 24px}h1,h2,h3,p{margin:0 0 12px}h1{font-size:clamp(26px,4vw,40px);letter-spacing:-1px}h2{font-size:20px}a{color:var(--blue)}.muted{color:var(--muted)}.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--blue)}header{display:flex;justify-content:space-between;align-items:center;gap:24px;border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:24px}label{display:block;font-size:13px;color:var(--muted)}select,button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;min-height:44px;padding:8px 12px}button{cursor:pointer}button:hover,button[aria-pressed=true]{border-color:var(--blue);background:#273c58}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:3px}.status{padding:12px 16px;background:var(--surface);border-left:3px solid var(--blue);border-radius:4px;margin-bottom:24px}.status.warning{border-color:var(--amber)}.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}.card,.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}.card-label{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}.card-value{font-size:clamp(22px,3vw,32px);font-weight:700;font-variant-numeric:tabular-nums}.allocation{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.5fr);gap:24px;align-items:start}.chart{width:min(100%,300px);aspect-ratio:1;border-radius:50%;position:relative;margin:24px auto}.hole{position:absolute;inset:24%;border-radius:50%;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center}.hole strong{font-size:30px}.hole span{font-size:12px;color:var(--muted)}.detail{min-height:190px;border-top:1px solid var(--border);padding-top:20px}.detail p{font-size:14px}.measure{color:var(--amber);font-size:12px;text-transform:uppercase;letter-spacing:1px}.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}caption{text-align:left;font-size:20px;font-weight:700;margin-bottom:16px}th,td{padding:8px 4px;border-bottom:1px solid var(--border);text-align:left}th{color:var(--muted);font-weight:500}.numeric{text-align:right;white-space:nowrap}td button{border-color:transparent;background:transparent;text-align:left;width:100%;padding:8px 6px;display:flex;align-items:center;gap:10px}.dot{width:10px;height:10px;flex:none;border-radius:50%;background:var(--slice-color)}tfoot td{font-weight:700;border:0;padding-top:16px}.below{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}.below ul{padding-left:20px}.component-list{display:grid;grid-template-columns:1fr auto;gap:8px 16px;font-size:14px}.component-list dt,.component-list dd{margin:0}.component-list dd{text-align:right;font-variant-numeric:tabular-nums}.sources li{margin-bottom:12px;overflow-wrap:anywhere}footer{margin-top:32px;border-top:1px solid var(--border);padding-top:20px;font-size:13px;color:var(--muted)}[hidden]{display:none!important}
-@media(max-width:760px){main{padding:24px 16px}header{align-items:start;flex-direction:column}.cards{grid-template-columns:1fr}.allocation,.below{grid-template-columns:1fr}.panel{padding:20px}.chart{width:260px}.detail{min-height:0}}
+.preview{height:100px;display:flex;flex-direction:column;justify-content:center;gap:4px;font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.preview strong{font-size:16px;line-height:1.4;max-height:2.8em;overflow:hidden}.preview .muted{margin:0}.is-preview{background:var(--bg)}.is-preview button{border-color:var(--blue)}
+@media(max-width:760px){main{padding:24px 16px}header{align-items:start;flex-direction:column}.cards{grid-template-columns:1fr}.allocation,.below{grid-template-columns:1fr}.panel{padding:20px;min-width:0}.chart{width:min(100%,260px)}.detail{min-height:0}}
 </style>
 </head>
 <body>
@@ -18,7 +19,7 @@
 <section id="dashboard" hidden aria-label="Asset allocation">
 <div class="cards"><div class="card"><div class="card-label">Consolidated total assets</div><div class="card-value" id="total"></div><div class="muted" id="period"></div></div><div class="card"><div class="card-label">Change vs previous quarter</div><div class="card-value" id="change"></div><div class="muted">Same accounting policy, reported USD.</div></div><div class="card"><div class="card-label">Allocation check</div><div class="card-value">100%</div><div class="muted">Every slice reconciles to the balance sheet.</div></div></div>
 <div class="allocation">
-<section class="panel" aria-labelledby="chart-heading"><h2 id="chart-heading">Total asset allocation</h2><p class="muted">Select an item in the table for its accounting basis.</p><div id="chart" class="chart" role="img" aria-describedby="allocation-table"><div class="hole"><strong>100%</strong><span>consolidated assets</span></div></div><div class="detail" id="detail" aria-live="polite"></div></section>
+<section class="panel" aria-labelledby="chart-heading"><h2 id="chart-heading">Total asset allocation</h2><p class="muted">Hover a chart slice or hover/focus a table item to preview its value. Select a table item for its accounting basis.</p><div id="chart" class="chart" role="img" aria-describedby="allocation-table"><div class="hole"><strong>100%</strong><span>consolidated assets</span></div></div><div class="preview" id="preview"><p class="muted">Preview: hover a slice or focus a table item.</p></div><div class="detail" id="detail" aria-live="polite"></div></section>
 <div class="panel table-scroll"><table id="allocation-table"><caption>Assets, not enterprise value</caption><thead><tr><th scope="col">Allocation</th><th scope="col" class="numeric">USD billions</th><th scope="col" class="numeric">% of total</th></tr></thead><tbody id="rows"></tbody><tfoot><tr><td>Total assets</td><td id="table-total" class="numeric"></td><td class="numeric">100.00%</td></tr></tfoot></table></div>
 </div>
 <div class="below">
@@ -37,6 +38,7 @@ const usd=new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFraction
 const pct=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dataCache=new Map();
 let index, selection=0;
+let previewData=null, sectors=[], pointerKey=null, focusKey=null, dismissedKey=null, renderedKey=null;
 function element(tag,text,className){const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;return node;}
 function status(text,warning=false){$('status').textContent=text;$('status').classList.toggle('warning',warning);}
 function assert(condition,message){if(!condition)throw new Error(message);}
@@ -78,13 +80,48 @@ function detail(data,key){
  const slice=data.slices.find(item=>item.key===key);$('detail').replaceChildren(element('h3',slice.label),element('p',slice.measurement,'measure'),element('p',slice.note));
  for(const button of $('rows').querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.key===key));
 }
+function preview(){
+ const target=focusKey||pointerKey;
+ if(target!==dismissedKey)dismissedKey=null;
+ const key=previewData&&target!==dismissedKey?target:null;
+ if(key===renderedKey)return;
+ renderedKey=key;
+ const slice=key?previewData.slices.find(item=>item.key===key):null;
+ $('preview').replaceChildren(...(slice?[element('strong',slice.label),element('span',`$${usd.format(slice.amount/1e9)}B / ${pct.format(slice.amount/previewData.total_assets*100)}% of total`)]:[element('p','Preview: hover a slice or focus a table item.','muted')]));
+ for(const button of $('rows').querySelectorAll('button'))button.closest('tr').classList.toggle('is-preview',button.dataset.key===key);
+}
+function clearPreview(){
+ previewData=null;sectors=[];pointerKey=null;focusKey=null;dismissedKey=null;preview();
+}
+function chartKey(event){
+ if(!previewData)return null;
+ const rect=$('chart').getBoundingClientRect();
+ const dx=event.clientX-rect.left-rect.width/2,dy=event.clientY-rect.top-rect.height/2;
+ const radius=Math.hypot(dx,dy),outer=Math.min(rect.width,rect.height)/2;
+ const inner=$('chart').querySelector('.hole').getBoundingClientRect().width/2;
+ if(radius<=inner||radius>=outer)return null;
+ const angle=(Math.atan2(dx,-dy)*180/Math.PI+360)%360;
+ const sector=sectors.find(item=>angle>=item.start&&angle<item.end);
+ return sector?sector.key:null;
+}
+$('chart').addEventListener('pointermove',event=>{if(event.pointerType==='touch')return;pointerKey=chartKey(event);preview();});
+for(const type of ['pointerleave','pointercancel'])$('chart').addEventListener(type,()=>{pointerKey=null;preview();});
+$('rows').addEventListener('pointermove',event=>{if(event.pointerType==='touch'||!previewData)return;const button=event.target.closest('button');pointerKey=button?button.dataset.key:null;preview();});
+for(const type of ['pointerleave','pointercancel'])$('rows').addEventListener(type,()=>{pointerKey=null;preview();});
+$('rows').addEventListener('focusin',event=>{const button=event.target.closest('button');focusKey=previewData&&button&&button.matches(':focus-visible')?button.dataset.key:null;preview();});
+$('rows').addEventListener('focusout',()=>{focusKey=null;preview();});
+$('rows').addEventListener('pointerdown',()=>{focusKey=null;preview();});
+$('rows').addEventListener('keydown',event=>{if(event.key==='Escape'||!previewData)return;const button=event.target.closest('button');if(button){focusKey=button.dataset.key;preview();}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){dismissedKey=focusKey||pointerKey;preview();}});
 function draw(data,previous){
+ previewData=data;
  $('total').textContent=`$${usd.format(data.total_assets/1e9)}B`;$('period').textContent=`As of ${data.period}`;
  $('change').textContent=previous?`${data.total_assets>=previous.total_assets?'+':''}${pct.format((data.total_assets/previous.total_assets-1)*100)}%`:'Not available';
  $('table-total').textContent=usd.format(data.total_assets/1e9);
- $('rows').replaceChildren();let angle=0;const gradient=[];
+ $('rows').replaceChildren();let angle=0,allocated=0;const gradient=[];
  data.slices.forEach((slice,i)=>{
-  const end=angle+slice.amount/data.total_assets*360;gradient.push(`${colors[i]} ${angle}deg ${end}deg`);angle=end;
+  allocated+=slice.amount;const end=allocated/data.total_assets*360;gradient.push(`${colors[i]} ${angle}deg ${end}deg`);
+  if(slice.amount>0)sectors.push({key:slice.key,start:angle,end});angle=end;
   const row=document.createElement('tr');const cell=document.createElement('td');const button=document.createElement('button');
   button.type='button';button.dataset.key=slice.key;button.setAttribute('aria-pressed','false');button.style.setProperty('--slice-color',colors[i]);
   const dot=element('span','','dot');dot.setAttribute('aria-hidden','true');button.append(dot,element('span',slice.label));button.addEventListener('click',()=>detail(data,slice.key));
@@ -100,7 +137,7 @@ function draw(data,previous){
 }
 async function selectQuarter(){
  const token=++selection;const entry=index.quarters.find(item=>item.quarter===$('quarter').value);
- $('dashboard').hidden=true;
+ clearPreview();$('dashboard').hidden=true;
  if(entry.status==='pending'){status(`${entry.quarter} is pending ${entry.missing.join(' and ')}. No previous-quarter holdings are substituted.`,true);return;}
  status(`Loading ${entry.quarter}.`);
  try{
