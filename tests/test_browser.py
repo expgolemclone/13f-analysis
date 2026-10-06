@@ -70,6 +70,8 @@ class BrowserTests(unittest.TestCase):
         expect(self.page.locator("#detail")).to_contain_text("equity-method carrying value")
         expect(self.page.locator("#detail")).to_contain_text("not 13F market value")
         expect(self.page.locator("#download")).to_have_attribute("href", "data/quarters/2026-Q2.json")
+        expect(self.page.get_by_role("link", name="expgolemclone/13f-analysis", exact=True)).to_have_attribute(
+            "href", "https://github.com/expgolemclone/13f-analysis")
 
     def test_keyboard_selection_has_focus_and_pressed_state(self):
         self.open()

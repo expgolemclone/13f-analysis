@@ -96,8 +96,8 @@ The workflow is public-repository-only. It verifies on main pushes and pull requ
 There is no generated-data commit, automatic git push, runtime API server, database, Hugging Face dependency or LLM service.
 
 1. Configure Pages to deploy through GitHub Actions.
-2. Set the real contact identity using `gh secret set SEC_USER_AGENT --repo expgolemclone/stock`.
-3. Run `gh workflow run update.yml --repo expgolemclone/stock`.
+2. Set the real contact identity using `gh secret set SEC_USER_AGENT --repo expgolemclone/13f-analysis`.
+3. Run `gh workflow run update.yml --repo expgolemclone/13f-analysis`.
 4. Verify the live source mappings, reconciliation and deployment result before treating the site as operational.
 
 The schedule checks weekly throughout the year and daily on days 10-25 in February, May, August and November.
