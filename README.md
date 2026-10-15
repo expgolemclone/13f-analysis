@@ -78,7 +78,7 @@ If a filing changes its taxonomy, inspect it and review the mapping; do not inse
 
 ## Run and test
 
-Python 3.14 and the pinned dependencies in `requirements.txt` are used by CI.
+Python 3.14 and the pinned `runtime` dependency group in `pyproject.toml` are used by CI.
 On the managed Windows PC, provision dependencies only with the envx shared runtime manager.
 Do not create a repository-local `.venv` or run a repository-local package install.
 GitHub-hosted jobs install packages into the runner's interpreter, outside the checkout.

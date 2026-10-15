@@ -1,0 +1,5 @@
+[dependency-groups]
+runtime = [
+    "edgartools==5.60.0",
+    "playwright==1.63.0",
+]
