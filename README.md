@@ -63,16 +63,6 @@ The accounting policy is bounded to 2023-Q1 onward, when OXY common stock was al
 The test fixture uses official 2026-Q2 balance-sheet amounts, but its XBRL context shapes and 13F positions are
 **synthetic**. It is never a production dataset. Passing offline tests does not establish successful live SEC extraction.
 
-Live SEC extraction and first Pages deployment were verified on 2026-10-06 for 2025-Q4, 2026-Q1 and 2026-Q2.
-The latest completed quarter reports total assets of USD 1,263,071,000,000. The 2026-Q3 quarter is pending filings.
-All four balance-sheet/PP&E reconciliation deltas are zero for those three completed quarters.
-Production 13F values come from SEC filings, not the synthetic fixture. Source accessions, XBRL contexts and declared 13F units
-are included in the downloadable quarterly JSON.
-
-The hosted run passed 81 tests, actual pinned-SDK decoder checks and live source validation before deployment.
-A headless check of the published site verified all completed quarters, the 17-slice table, pending handling,
-mobile layout and no JavaScript errors. The contact identity is a GitHub Secret and is absent from generated output.
-
 A real SEC contact and a successful live build remain required for every publication.
 If a filing changes its taxonomy, inspect it and review the mapping; do not insert a guessed amount or broaden the selector.
 
@@ -89,7 +79,6 @@ envx-python -B tests/check_sdk.py
 ```
 
 The first command checks the accounting model, failure behavior and UI with synthetic inputs.
-It sends unittest reports to stdout and preserves failure exit codes, so strict PowerShell harnesses do not mistake successful test reports for native-command errors.
 The second checks the actual installed EdgarTools XBRL and 13F decoders offline.
 Browser tests require the managed Chromium revision for the pinned Playwright version. No GUI or screenshots are used.
 
@@ -124,20 +113,6 @@ A newly ended quarter stays pending until both source types are available. Older
 but are never shown as the pending quarter's allocation. The UI displays the verification timestamp and warns after 14 days.
 Build failures never publish partial output. GitHub can disable public schedules after inactivity; monitor workflow failures
 and the site's last-success timestamp, and re-enable the workflow when needed.
-
-## Layout
-
-```text
-config/berkshire.json      CIK, history boundary, XBRL selectors and CUSIPs
-scripts/assets.py         Pure extraction, allocation and reconciliation
-scripts/update.py         EdgarTools adapter, history builder and inspection
-templates/index.html      Static UI, responsive table and accessible chart
-tests/                    Offline fixtures, unit tests, browser and SDK checks
-.github/workflows/        Public CI and Pages deployment
-```
-
-Generated output contains `index.html`, `build.json`, `data/quarters.json` and one JSON per complete quarter.
-Pending quarters have metadata only. The index points to the latest complete quarter; no duplicate latest snapshot is generated.
 
 ## Sources and license
 
