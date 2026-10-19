@@ -69,26 +69,24 @@ If a filing changes its taxonomy, inspect it and review the mapping; do not inse
 ## Run and test
 
 Python 3.14 and the pinned `runtime` dependency group in `pyproject.toml` are used by CI.
-On the managed Windows PC, provision dependencies only with the envx shared runtime manager.
-Do not create a repository-local `.venv` or run a repository-local package install.
-GitHub-hosted jobs install packages into the runner's interpreter, outside the checkout.
+Run locally with uv's `runtime` dependency group.
 
 ```powershell
-envx-python -B tests/run.py
-envx-python -B tests/check_sdk.py
+uv run --group runtime python -B tests/run.py
+uv run --group runtime python -B tests/check_sdk.py
 ```
 
 The first command checks the accounting model, failure behavior and UI with synthetic inputs.
 The second checks the actual installed EdgarTools XBRL and 13F decoders offline.
-Browser tests require the managed Chromium revision for the pinned Playwright version. No GUI or screenshots are used.
+Browser tests require Chromium matching the pinned Playwright version. No GUI or screenshots are used.
 
 For live ingestion, `SEC_USER_AGENT` must contain a descriptive application name and a real contact mailbox you control.
 Placeholders, reserved domains and GitHub no-reply addresses are rejected. Set `EDGAR_RATE_LIMIT_PER_SEC` to 1, 2 or 3.
 Manage local environment settings with envx; do not copy a contact from somebody else's repository.
 
 ```powershell
-envx-python -B scripts/update.py inspect --output C:/dev/tmp/brk-xbrl-inspection
-envx-python -B scripts/update.py build --output C:/dev/tmp/brk-site
+uv run --group runtime python -B scripts/update.py inspect --output C:/dev/tmp/brk-xbrl-inspection
+uv run --group runtime python -B scripts/update.py build --output C:/dev/tmp/brk-site
 ```
 
 Outputs must be new directories outside the repository. `inspect` exports the latest financial filing's enriched facts
