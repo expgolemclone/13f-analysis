@@ -82,7 +82,7 @@ Browser tests require Chromium matching the pinned Playwright version. No GUI or
 
 For live ingestion, `SEC_USER_AGENT` must contain a descriptive application name and a real contact mailbox you control.
 Placeholders, reserved domains and GitHub no-reply addresses are rejected. Set `EDGAR_RATE_LIMIT_PER_SEC` to 1, 2 or 3.
-Manage local environment settings with envx; do not copy a contact from somebody else's repository.
+Do not copy a contact from somebody else's repository.
 
 ```powershell
 uv run --group runtime python -B scripts/update.py inspect --output C:/dev/tmp/brk-xbrl-inspection

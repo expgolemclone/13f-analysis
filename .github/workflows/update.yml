@@ -23,19 +23,23 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.14'
-      - name: Install declared dependencies into the runner's shared interpreter
-        run: python -m pip install --group runtime
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with: &mise-tools
+          version: '2026.10.12'
+          mise_toml: |
+            [tools]
+            python = "3.14.7"
+            uv = "0.12.17"
+      - name: Install project-locked dependencies
+        run: uv sync --locked --group runtime
       - name: Check dependency contracts
-        run: python -m pip check
+        run: uv pip check
       - name: Install headless Chromium
-        run: python -m playwright install --with-deps chromium
+        run: uv run --locked --group runtime python -m playwright install --with-deps chromium
       - name: Verify accounting, updates and browser behavior
-        run: python -B tests/run.py
+        run: uv run --locked --group runtime python -B tests/run.py
       - name: Verify pinned EdgarTools decoders offline
-        run: python -B tests/check_sdk.py
+        run: uv run --locked --group runtime python -B tests/check_sdk.py
 
   publish:
     if: github.event.repository.private == false && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
@@ -51,21 +55,20 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.14'
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with: *mise-tools
       - name: Require a real SEC contact before any live request
         env:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: |
           python -c "import os, sys; sys.path.insert(0, 'scripts'); from update import validate_identity; validate_identity(os.environ['SEC_USER_AGENT'])"
-      - name: Install declared dependencies into the runner's shared interpreter
-        run: python -m pip install --group runtime
+      - name: Install project-locked dependencies
+        run: uv sync --locked --group runtime
       - name: Build only verified SEC data
         env:
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
           EDGAR_RATE_LIMIT_PER_SEC: '3'
-        run: python -B scripts/update.py build --output '${{ runner.temp }}/site'
+        run: uv run --locked --group runtime python -B scripts/update.py build --output '${{ runner.temp }}/site'
       - name: Reject incomplete builds and test fixtures
         run: |
           python -c "import json, pathlib; root=pathlib.Path('${{ runner.temp }}/site'); marker=json.loads((root/'build.json').read_text()); index=json.loads((root/'data/quarters.json').read_text()); assert not index.get('test_fixture'); assert marker['quarters']==sorted(p.stem for p in (root/'data/quarters').glob('*.json')); assert index['latest_complete'] in marker['quarters']"
